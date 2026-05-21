@@ -1,0 +1,63 @@
+name: CI/CD — Trámites Municipales
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  pipeline:
+    name: Install → Lint → Build → Test → Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      # ── 1. Install ──────────────────────────────────────────────────
+      - name: Install dependencies
+        working-directory: backend
+        run: npm ci
+
+      # ── 2. Lint ─────────────────────────────────────────────────────
+      - name: Lint (ESLint)
+        working-directory: backend
+        run: npm run lint
+
+      # ── 3. Build check ──────────────────────────────────────────────
+      - name: Build — verificar sintaxis
+        working-directory: backend
+        run: node --check src/app.js
+
+      # ── 4 + 5. Test + Coverage Gate ─────────────────────────────────
+      # Jest falla si cobertura < 60% (configurado en jest.config.js)
+      - name: Test con cobertura (Jest + Supertest)
+        working-directory: backend
+        run: npm run test:ci
+        env:
+          NODE_ENV: test
+          SUPABASE_URL: https://test.supabase.co
+          SUPABASE_SERVICE_ROLE_KEY: test-service-role-key
+
+      - name: Subir reporte de cobertura
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: backend/coverage/lcov-report/
+
+      # ── 6. Deploy a Railway (solo merge a main) ──────────────────────
+      - name: Deploy a Railway
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        working-directory: backend
+        run: npx @railway/cli@latest up --service tramites-api --detach
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
