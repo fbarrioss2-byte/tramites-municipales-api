@@ -19,6 +19,7 @@ app.use(helmet());
 // ── CORS — acepta peticiones desde el frontend en Vercel ──────────────
 const originesPermitidos = [
   'https://tramites-municipales-fwh8.vercel.app',
+  'https://tramites-municipales-api-production.up.railway.app', // <-- AGREGA ESTA LÍNEA
   'http://localhost:5173',
   'http://localhost:3000',
 ];
