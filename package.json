@@ -11,7 +11,7 @@
     "test:ci": "jest --coverage --forceExit --ci"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22.0.0"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.106.0",
